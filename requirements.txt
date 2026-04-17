@@ -6,3 +6,6 @@ jsons
 jsonschema
 singleton_decorator
 packaging
+fastapi
+uvicorn
+python-multipart

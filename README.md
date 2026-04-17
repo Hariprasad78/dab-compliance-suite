@@ -76,6 +76,23 @@ After extracting the DAB Compliance Test Suite, you DO NOT need to manually conf
 4. Done!
    - only need to run --init again if you want to replace applications or URLs.
 
+### Runtime Install Bridge ###
+
+For local `applications/install` flows, the suite opens a temporary FastAPI bridge that serves the app artifact over HTTP and can also accept an upload if the expected artifact is missing from `config/apps/`.
+
+- The bridge is not started from `main.py`.
+- It is used only for the install test, then stopped automatically.
+- Default bind address: `0.0.0.0`
+- Preferred port: `8765`
+- If `8765` is already in use, the suite picks the next free port and logs that choice instead of failing hard.
+- For uploads from another machine on the same network, use the IP address of the host running the suite.
+
+When the temporary bridge is active, upload the artifact with:
+
+```bash
+curl -X POST http://<host-machine-ip>:8765/runtime/install/artifacts/Sample_App -F "file=@/absolute/path/to/Sample_App.apk"
+```
+
 
 ## Available Test Suite ##
 
