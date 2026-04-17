@@ -413,6 +413,7 @@ system_settings_schema = {
     "timeZone": {"type": "string"},
     "screenSaver": {"type": "boolean"},
     "screenSaverTimeout": {"type": "integer"},
+    "screenSaverMinTimeout": {"type": "integer"},
     "personalizedAds": {"type": "boolean"},
     "highContrastText": {"type": "boolean"},
     "identifierForAdvertising": {"type": "string"},
