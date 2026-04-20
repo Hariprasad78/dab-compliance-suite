@@ -43,7 +43,7 @@ Each time you push code to the 'main' branch, a version number is created automa
 - You can download it from GitHub → Actions → Artifacts.
 
 ## Prerequisite ##
-Python minimal version 3.8
+Python minimal version 3.10
 
 Please edit config.py to have the device app line up with your system settings.
 
