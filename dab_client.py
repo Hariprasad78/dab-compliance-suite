@@ -16,6 +16,8 @@ class DabClient:
         self.__client = mqtt.Client("mqtt5_client",protocol=mqtt.MQTTv5)
         self.__metrics_count = 0
         self.__response_chunks = []
+        self.__response_dic = {}
+        self.__code = -1
 
     def __on_message(self, client, userdata, message):
         self.__response_dic = json.loads(message.payload)
@@ -53,16 +55,29 @@ class DabClient:
     def request(self,device_id,operation,msg="{}"):
         # Send request and block until get the response or timeout
         topic = "dab/" + device_id+"/" + operation
-        response_topic="dab/_response/"+topic
+        response_topic = f"dab/_response/{uuid.uuid4().hex}"
+        self.__response_chunks.clear()
+        self.__response_dic = {}
+        self.__code = -1
+
+        if not self.__lock.locked():
+            self.__lock.acquire()
+
+        def _on_response(client, userdata, message):
+            self.__on_message(client, userdata, message)
+
+        self.__client.message_callback_add(response_topic, _on_response)
         self.__client.subscribe(response_topic)
         properties=Properties(PacketTypes.PUBLISH)
         properties.ResponseTopic=response_topic
-        self.__client.on_message = self.__on_message
-        self.__client.subscribe(response_topic)
         self.__client.publish(topic,msg,properties=properties)
-        self.__response_chunks.clear()
         if not (self.__lock.acquire(timeout = 90)):
             self.__code = 100
+        try:
+            self.__client.message_callback_remove(response_topic)
+        except:
+            pass
+        self.__client.unsubscribe(response_topic)
         
     def response(self):
         if((self.__code != -1) and (self.__code != 100)):

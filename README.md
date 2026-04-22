@@ -51,6 +51,39 @@ Please edit config.py to have the device app line up with your system settings.
 pip3 install -r requirements.txt
 ```
 
+### Ubuntu 23.04+ ###
+
+On Ubuntu 23.04 and later, `pip` installation into the system Python may fail because the Python environment is externally managed.
+
+Use a virtual environment instead:
+
+```bash
+sudo apt install python3-venv
+python3 -m venv ~/.venv/dab-compliance-suite
+~/.venv/dab-compliance-suite/bin/pip3 install -r requirements.txt
+~/.venv/dab-compliance-suite/bin/python3 main.py --help
+```
+
+Or activate it with `source`:
+
+```bash
+source ~/.venv/dab-compliance-suite/bin/activate
+pip3 install -r requirements.txt
+python3 main.py --help
+```
+
+Run the suite using the virtual environment Python:
+
+```bash
+~/.venv/dab-compliance-suite/bin/python3 main.py -v -b <mqtt-broker-ip> -I <dab-device-id>
+```
+
+If you activated the environment with `source`, you can run:
+
+```bash
+python3 main.py -v -b <mqtt-broker-ip> -I <dab-device-id>
+```
+
 ### Automatic App Setup Instructions  ###
 
 After extracting the DAB Compliance Test Suite, you DO NOT need to manually configure the APK or App Store URL.
@@ -85,13 +118,6 @@ For local `applications/install` flows, the suite opens a temporary FastAPI brid
 - Default bind address: `0.0.0.0`
 - Preferred port: `8765`
 - If `8765` is already in use, the suite picks the next free port and logs that choice instead of failing hard.
-- For uploads from another machine on the same network, use the IP address of the host running the suite.
-
-When the temporary bridge is active, upload the artifact with:
-
-```bash
-curl -X POST http://<host-machine-ip>:8765/runtime/install/artifacts/Sample_App -F "file=@/absolute/path/to/Sample_App.apk"
-```
 
 
 ## Available Test Suite ##
