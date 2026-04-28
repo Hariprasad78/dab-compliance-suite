@@ -168,9 +168,16 @@ def _remove_app_files(app_id: str, config_dir: str) -> int:
 def _to_install_payload(app_id: str, file_path: Path, timeout: int = 60000) -> Dict[str, object]:
     """Build a standard install payload for applications/install (any extension)."""
     ext = file_path.suffix[1:].lower() if file_path.suffix else "bin"
+    try:
+        from util.runtime_api_server import get_runtime_install_url
+
+        install_url = get_runtime_install_url(app_id)
+    except Exception as e:
+        raise RuntimeError(f"Could not create runtime install URL for '{app_id}': {e}") from e
+
     return {
         "appId": app_id,
-        "url": str(file_path),  # absolute filesystem path (no file://)
+        "url": install_url,
         "format": ext or "bin",
         "timeout": int(timeout),
     }
@@ -201,6 +208,18 @@ def ensure_app_available_anyext(
 
     found = _find_first_app_file(app_id, config_dir)
     if not found:
+        if not prompt_if_missing:
+            try:
+                from util.runtime_api_server import wait_for_runtime_install_artifact
+
+                found = wait_for_runtime_install_artifact(app_id, config_dir=config_dir)
+            except Exception as e:
+                LOGGER.warn(f"[RUNTIME INSTALL] Could not prepare temporary runtime install bridge: {e}")
+
+        if found:
+            found = found.resolve()
+            return _to_install_payload(app_id, found, timeout=timeout)
+
         if not prompt_if_missing:
             raise FileNotFoundError(
                 f"Install artifact for app_id='{app_id}' not found in '{config_dir}'. "

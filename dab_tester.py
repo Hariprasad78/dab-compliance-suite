@@ -692,6 +692,13 @@ class DabTester:
             return test_result
 
         finally:
+            if dab_request_topic == "applications/install":
+                try:
+                    from util.runtime_api_server import stop_runtime_install_bridge
+
+                    stop_runtime_install_bridge()
+                except Exception:
+                    pass
             # Always try to go back Home after the test, regardless of outcome/early return/exception.
             try:
                 self.return_to_home_after_test(device_id)
@@ -837,6 +844,13 @@ class DabTester:
                 )
                 result_list.append(tr)
                 outcome_for_end = "SKIPPED"
+
+            try:
+                from util.runtime_api_server import stop_runtime_install_bridge
+
+                stop_runtime_install_bridge()
+            except Exception:
+                pass
 
             # --- close the test section (mirrors conformance) ---
             total_ms = int((time.time() - section_wall_start) * 1000)

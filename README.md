@@ -43,12 +43,45 @@ Each time you push code to the 'main' branch, a version number is created automa
 - You can download it from GitHub → Actions → Artifacts.
 
 ## Prerequisite ##
-Python minimal version 3.8
+Python minimal version 3.10
 
 Please edit config.py to have the device app line up with your system settings.
 
 ```
 pip3 install -r requirements.txt
+```
+
+### Ubuntu 23.04+ ###
+
+On Ubuntu 23.04 and later, `pip` installation into the system Python may fail because the Python environment is externally managed.
+
+Use a virtual environment instead:
+
+```bash
+sudo apt install python3-venv
+python3 -m venv ~/.venv/dab-compliance-suite
+~/.venv/dab-compliance-suite/bin/pip3 install -r requirements.txt
+~/.venv/dab-compliance-suite/bin/python3 main.py --help
+```
+
+Or activate it with `source`:
+
+```bash
+source ~/.venv/dab-compliance-suite/bin/activate
+pip3 install -r requirements.txt
+python3 main.py --help
+```
+
+Run the suite using the virtual environment Python:
+
+```bash
+~/.venv/dab-compliance-suite/bin/python3 main.py -v -b <mqtt-broker-ip> -I <dab-device-id>
+```
+
+If you activated the environment with `source`, you can run:
+
+```bash
+python3 main.py -v -b <mqtt-broker-ip> -I <dab-device-id>
 ```
 
 ### Automatic App Setup Instructions  ###
@@ -75,6 +108,16 @@ After extracting the DAB Compliance Test Suite, you DO NOT need to manually conf
 
 4. Done!
    - only need to run --init again if you want to replace applications or URLs.
+
+### Runtime Install Bridge ###
+
+For local `applications/install` flows, the suite opens a temporary FastAPI bridge that serves the app artifact over HTTP and can also accept an upload if the expected artifact is missing from `config/apps/`.
+
+- The bridge is not started from `main.py`.
+- It is used only for the install test, then stopped automatically.
+- Default bind address: `0.0.0.0`
+- Preferred port: `8765`
+- If `8765` is already in use, the suite picks the next free port and logs that choice instead of failing hard.
 
 
 ## Available Test Suite ##
