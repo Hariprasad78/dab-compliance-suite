@@ -209,18 +209,6 @@ def ensure_app_available_anyext(
     found = _find_first_app_file(app_id, config_dir)
     if not found:
         if not prompt_if_missing:
-            try:
-                from util.runtime_api_server import wait_for_runtime_install_artifact
-
-                found = wait_for_runtime_install_artifact(app_id, config_dir=config_dir)
-            except Exception as e:
-                LOGGER.warn(f"[RUNTIME INSTALL] Could not prepare temporary runtime install bridge: {e}")
-
-        if found:
-            found = found.resolve()
-            return _to_install_payload(app_id, found, timeout=timeout)
-
-        if not prompt_if_missing:
             raise FileNotFoundError(
                 f"Install artifact for app_id='{app_id}' not found in '{config_dir}'. "
                 "Place it there (any extension) or run with --init."
@@ -628,7 +616,7 @@ class PayloadConfigError(Exception):
 def _hint_from_reason(reason: str) -> str:
     low = str(reason).lower()
     if "install artifact" in low or "config/apps" in low:
-        return "Place the app file in config/apps or run with --init to configure paths."
+        return "Run python3 main.py --init or place the app under config/apps/ (example: config/apps/Sample_App.apk)."
     if "app store" in low or "app_url" in low or "sample_app.json" in low:
         return "Run with --init to set the App Store URL (config/apps/sample_app.json)."
     return ""

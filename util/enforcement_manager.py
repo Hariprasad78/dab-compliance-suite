@@ -56,7 +56,24 @@ class EnforcementManager:
         return not self.supported_operations or operation in self.supported_operations
 
     def add_supported_operations(self, operations):
-        self.supported_operations = operations
+        normalized = set()
+
+        for op in operations if isinstance(operations, (list, set, tuple)) else ():
+            if isinstance(op, str):
+                op = op.strip()
+                if op:
+                    normalized.add(op)
+            elif isinstance(op, dict):
+                name = (
+                    op.get("operation")
+                    or op.get("name")
+                    or op.get("topic")
+                    or op.get("path")
+                )
+                if isinstance(name, str) and name.strip():
+                    normalized.add(name.strip())
+
+        self.supported_operations = normalized
 
     def get_supported_operations(self):
         return self.supported_operations
