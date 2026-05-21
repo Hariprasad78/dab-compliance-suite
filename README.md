@@ -84,40 +84,42 @@ If you activated the environment with `source`, you can run:
 python3 main.py -v -b <mqtt-broker-ip> -I <dab-device-id>
 ```
 
-### Automatic App Setup Instructions  ###
+### Application and App Store Setup ###
 
-After extracting the DAB Compliance Test Suite, you DO NOT need to manually configure the APK or App Store URL.
+The DAB Compliance Test Suite is generic. It cannot hardcode one fixed app,
+APK, app store, or store URL for every Device Under Test (DUT).
 
-1. Run your CLI with --init
-   Example:
-   python3 main.py --init
+Choose an app package that your DUT platform can install and remove safely.
+Android TV and Google TV users can provide a valid APK or APKS package. Other
+platforms must provide an application package in a format supported by that
+platform.
 
-2. Application Setup:
-   - The tool will check if Sample_App (application file) exists in config/apps/
-   - If missing, it will prompt:
-       "Full path to the application file (.apk or .apks):"
-   - Enter the absolute path to your application file.
-   - The tool will copy it into config/apps/ and rename to Sample_App.<ext>
+Run the setup command:
 
-3. App Store URL Setup:
-   - The tool will check if config/apps/sample_app.json exists.
-   - If missing, it will prompt:
-       "Enter App Store URL for install-from-app-store tests:"
-   - Paste the Play Store (or App Store) URL.
-   - The tool saves it into config/apps/sample_app.json
+```bash
+python3 main.py --init
+```
 
-4. Done!
-   - only need to run --init again if you want to replace applications or URLs.
+The setup flow collects:
+
+1. Full path to the DUT-compatible application package.
+2. App store URL for install-from-app-store tests, if needed.
+
+For complete app setup details, see [Application and App Store Setup Guide](docs/app-setup/README.md).
 
 ### Runtime Install Bridge ###
 
-For local `applications/install` flows, the suite opens a temporary FastAPI bridge that serves the app artifact over HTTP and can also accept an upload if the expected artifact is missing from `config/apps/`.
+For local `applications/install` flows, the suite opens a temporary FastAPI bridge
+that serves the configured app artifact from `config/apps/` only when the test is
+applicable.
 
 - The bridge is not started from `main.py`.
 - It is used only for the install test, then stopped automatically.
 - Default bind address: `0.0.0.0`
 - Preferred port: `8765`
 - If `8765` is already in use, the suite picks the next free port and logs that choice instead of failing hard.
+- If the app artifact is missing for an applicable install test, run `python3 main.py --init` or place the correct DUT-compatible app package under `config/apps/`.
+- If the DUT is DAB 2.0 or does not support `applications/install`, the test should be marked `OPTIONAL_FAILED` and should not wait for an app artifact.
 
 
 ## Available Test Suite ##
