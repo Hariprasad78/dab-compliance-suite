@@ -21,6 +21,7 @@ import argparse
 from logger import LOGGER
 from util.config_loader import init_interactive_setup, make_app_id_list
 from util.runtime_config_store import load_config, apply_overrides, save_config
+from util.argument_validator import validate_arguments_and_warn
 
 config_path = os.environ.get("DAB_CONFIG_JSON")
 
@@ -42,7 +43,7 @@ if __name__ == "__main__":
                         action="store_true")
     parser.set_defaults(list=False)
     parser.add_argument("-b","--broker", 
-                        help="set the IP of the MQTT broker. Ex: -b 192.168.0.100",
+                        help="set the IP or host of the MQTT broker (host/IP only, no mqtt:// and no port). Ex: -b 192.168.0.100",
                         type=str,
                         default="localhost")
 
@@ -84,6 +85,7 @@ if __name__ == "__main__":
     parser.set_defaults(output="")
     parser.set_defaults(case=99999)
     args = parser.parse_args()
+    validate_arguments_and_warn(args)
     LOGGER.verbose = bool(args.verbose)
     device_id = args.ID
 

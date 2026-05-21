@@ -75,6 +75,19 @@ class DabTester:
         log(tr, f"[REASON] {reason}")
         return tr
 
+    def _result_before_payload(self, outcome: str, device_id: str, topic: str, title: str, reason: str, extra_logs: list = None):
+        """Return a TestResult directly before payload resolution."""
+        test_id = to_test_id(f"{topic}/{title}")
+        tr = TestResult(test_id, device_id, topic, "{}", outcome, "", [])
+        tr.test_result = outcome
+        self.logger.warn(f"[{outcome}] {title} (test_id={test_id}) - {reason}")
+        log(tr, f"[TEST] {title} (test_id={test_id}, device={device_id})")
+        for line in extra_logs or []:
+            if line:
+                log(tr, line)
+        log(tr, f"[REASON] {reason}")
+        return tr
+
     def _resolve_body_or_skip(self, device_id: str, topic: str, title: str, body_spec):
         """
         Build the request body. If it fails, return a SKIPPED or OPTIONAL_FAILED TestResult.
@@ -88,29 +101,12 @@ class DabTester:
             return True, body_str, None
         except PayloadConfigError as e:
             reason = str(e)
-            is_app_install_topic = "applications/install" in topic
-            is_app_related_error = (
-                "app store url" in reason.lower()
-                or "install artifact" in reason.lower()
-                or "not found" in reason.lower()
-            )
-
-            # ----- START: MODIFIED LOGIC -----
-            # If the test is for app installation on a DAB 2.0 device and the payload failed
-            # because an app file/URL is missing, mark it as OPTIONAL_FAILED.
-            if self.dab_version == "2.0" and is_app_install_topic and is_app_related_error:
-                outcome = "OPTIONAL_FAILED"
-                self.logger.warn(f"[{outcome}] {test_id} — {reason} (Optional for DAB 2.0).")
-                hint = "This test is optional for DAB 2.0 devices and is skipped."
-            else:
-                # Fallback to the original behavior for all other cases.
-                outcome = "SKIPPED"
-                hint = getattr(e, "hint", "")
-                log_msg = f"[{outcome}] {test_id} — payload/config missing: {reason}."
-                if hint:
-                    log_msg += f" {hint}"
-                self.logger.warn(log_msg)
-            # ----- END: MODIFIED LOGIC -----
+            outcome = "SKIPPED"
+            hint = getattr(e, "hint", "")
+            log_msg = f"[{outcome}] {test_id} — payload/config missing: {reason}."
+            if hint:
+                log_msg += f" {hint}"
+            self.logger.warn(log_msg)
 
             tr = TestResult(test_id, device_id, topic, "{}", outcome, "", [])
             tr.test_result = outcome
@@ -416,6 +412,45 @@ class DabTester:
 
         test_id = to_test_id(f"{dab_request_topic}/{test_title}")
 
+        # Run applicability checks before resolving payloads that may have side effects.
+        if not self.dab_version:
+            self.detect_dab_version(device_id)
+
+        dab_version = self.dab_version or "2.0"
+
+        try:
+            if Version(dab_version) < Version(test_version):
+                reason = f"\033[1;33m[ OPTIONAL_FAILED - Requires DAB Version {test_version}, but device version is {dab_version} ]\033[0m"
+                return self._result_before_payload(
+                    outcome="OPTIONAL_FAILED",
+                    device_id=device_id,
+                    topic=dab_request_topic,
+                    title=test_title,
+                    reason=reason,
+                )
+        except InvalidVersion as e:
+            self.logger.warn(f"[WARNING] Version comparison failed (invalid version string): {e}")
+
+        if dab_request_topic != "operations/list":
+            validate_code, prechecker_log = self.dab_checker.is_operation_supported(
+                device_id,
+                dab_request_topic,
+            )
+            unsupported = validate_code == ValidateCode.UNSUPPORT
+            uncertain_install = dab_request_topic == "applications/install" and validate_code == ValidateCode.UNCERTAIN
+            if unsupported or uncertain_install:
+                reason = "\033[1;33m[ OPTIONAL_FAILED - Required DAB Operation is NOT SUPPORTED by this device ]\033[0m"
+                if uncertain_install:
+                    reason = "\033[1;33m[ OPTIONAL_FAILED - Required DAB Operation support could not be confirmed by this device ]\033[0m"
+                return self._result_before_payload(
+                    outcome="OPTIONAL_FAILED",
+                    device_id=device_id,
+                    topic=dab_request_topic,
+                    title=test_title,
+                    reason=reason,
+                    extra_logs=[prechecker_log],
+                )
+
         # Try to build/resolve payload. If it fails, return a SKIPPED TestResult (no test_start)
         ok, dab_request_body, skipped_tr = self._resolve_body_or_skip(device_id, dab_request_topic, test_title, body_spec)
         if not ok:
@@ -443,25 +478,6 @@ class DabTester:
 
             # Initialize result object for logging and reporting
             test_result = TestResult(to_test_id(f"{dab_request_topic}/{test_title}"), device_id, dab_request_topic, dab_request_body, "UNKNOWN", "", [])
-            # ------------------------------------------------------------------------
-            # DAB Version Compatibility Check
-            # If the test is meant for DAB 2.1 but the dav version is on DAB 2.0,
-            # treat this as OPTIONAL_FAILED instead of skipping or erroring out.
-            # This ensures transparency in test result reporting.
-            # ------------------------------------------------------------------------
-            dab_version = self.dab_version or "2.0"
-
-            # MODIFIED: Use packaging.version for robust comparison
-            try:
-                if Version(dab_version) < Version(test_version):
-                    test_result.test_result = "OPTIONAL_FAILED"
-                    log(test_result, f"\033[1;33m[ OPTIONAL_FAILED - Requires DAB Version {test_version}, but device version is {dab_version} ]\033[0m")
-                    # close section before returning
-                    total_ms = int((time.time() - section_wall_start) * 1000)
-                    self.logger.test_end(outcome=test_result.test_result, duration_ms=total_ms)
-                    return test_result
-            except InvalidVersion as e:
-                log(test_result, f"[WARNING] Version comparison failed (invalid version string): {e}")
 
             # ------------------------------------------------------------------------
             # Capability filter 
@@ -483,18 +499,6 @@ class DabTester:
             except Exception:
                 # do not alter flow on capability check errors; continue to existing checks
                 pass
-
-            # Check operation support via operations/list (prechecker)
-            if dab_request_topic != 'operations/list':
-                validate_code, prechecker_log = self.dab_checker.is_operation_supported(device_id, dab_request_topic)
-
-                if validate_code == ValidateCode.UNSUPPORT:
-                    test_result.test_result = "OPTIONAL_FAILED"
-                    log(test_result, prechecker_log)
-                    log(test_result, f"\033[1;33m[ OPTIONAL_FAILED - Requires DAB Operation is NOT SUPPORTED ]\033[0m")
-                    total_ms = int((time.time() - section_wall_start) * 1000)
-                    self.logger.test_end(outcome=test_result.test_result, duration_ms=total_ms)
-                    return test_result
 
             # ------------------------------------------------------------------------
             # If precheck is supported and this is not a negative test case
