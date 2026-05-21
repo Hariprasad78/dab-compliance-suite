@@ -76,49 +76,7 @@ The setup flow collects:
 1. Full path to the DUT-compatible application package.
 2. App store URL for install-from-app-store tests, if needed.
 
-## Expected behavior for DAB 2.0 and unsupported operations
-
-`applications/install` is a DAB 2.1 app-related test. If `--dab-version 2.0` is
-used, DAB 2.1-only install tests should be marked `OPTIONAL_FAILED` before app
-payload setup.
-
-If `operations/list` does not report `applications/install` support, the install
-test should also be marked `OPTIONAL_FAILED` before app payload setup.
-
-In both cases, the tool should not wait for an app artifact in `config/apps/`.
-
-If the DUT is DAB 2.1, `applications/install` is reported in `operations/list`,
-and the configured app artifact is missing, the install test should be skipped.
-Run `python3 main.py --init` or place the correct DUT-compatible app package
-under `config/apps/`.
-
 ## Troubleshooting
-
-### Warning: Waiting for app upload
-
-You may see:
-
-```text
-[WARN] [RUNTIME INSTALL] Waiting for 'Sample_App' to be uploaded into config/apps.
-```
-
-This warning means the install artifact was not available.
-
-After PR #162, this should not happen for DAB 2.0 or unsupported
-`applications/install` paths. Those tests should be marked `OPTIONAL_FAILED`
-before app payload setup.
-
-If the install test is applicable, run:
-
-```bash
-python3 main.py --init
-```
-
-Then configure a valid app package for your DUT. You can also place the correct
-DUT-compatible package under `config/apps/`.
-
-If the DUT does not support `applications/install`, verify the DUT response for
-`operations/list` and verify the `--dab-version` value used for the run.
 
 ### App package cannot be installed
 
