@@ -10,6 +10,59 @@ The latest DAB Compliance Test Suite can be downloaded from the GitHub Actions w
 
 Download the latest artifact here: [Link](https://nightly.link/device-automation-bus/dab-compliance-suite/workflows/update-test-version/main/dab-compliance-suite.zip)
 
+This source zip artifact remains supported for users who want the existing
+repository download method.
+
+## Standalone Binary Download and Updates ##
+
+Alongside the source zip, the `main` branch build also creates standalone binary
+bundles:
+
+- `dab-compliance-suite-linux-x64.zip`
+- `dab-compliance-suite-macos-x64.zip`
+- `dab-compliance-suite-macos-arm64.zip`
+- `dab-compliance-suite-windows-x64.zip`
+
+These bundles include the Python runtime dependencies, so users do not need to
+install Python packages or run `pip install -r requirements.txt` after
+downloading them.
+
+After extracting the bundle on macOS or Linux, run:
+
+```bash
+./dab-compliance-suite --tool-version
+./dab-compliance-suite -v -b <mqtt-broker-ip> -I <dab-device-id>
+```
+
+On Windows, run:
+
+```powershell
+.\dab-compliance-suite.exe --tool-version
+.\dab-compliance-suite.exe -v -b <mqtt-broker-ip> -I <dab-device-id>
+```
+
+To update the extracted binary bundle to the latest released test version:
+
+```bash
+./dab-compliance-suite --update-version latest
+```
+
+To downgrade or switch to a specific test version:
+
+```bash
+./dab-compliance-suite --update-version <test-version>
+```
+
+The updater downloads the matching bundle for the current operating system. A
+version can be installed only if the matching release asset is available.
+
+You can also update from a downloaded zip or a direct URL:
+
+```bash
+./dab-compliance-suite --update-binary /path/to/dab-compliance-suite-<platform>.zip
+./dab-compliance-suite --update-binary https://example.com/dab-compliance-suite-<platform>.zip
+```
+
 
 ## Test Versioning ##
 
