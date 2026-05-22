@@ -6,4 +6,5 @@ test_version.txt
 build/
 dist/
 *.spec
+.DS_Store
 dab-compliance-suite-*.zip
