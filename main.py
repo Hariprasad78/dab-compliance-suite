@@ -87,8 +87,8 @@ if __name__ == "__main__":
     parser.add_argument("--update-version", type=str, default=None,
                         help="Update to a version from the update manifest. Use 'latest' or a specific test version.")
 
-    parser.add_argument("--update-manifest", type=str, default=None,
-                        help="Manifest file/URL used with --update-version.")
+    # `--update-manifest` CLI option removed per request.
+    # Author: Hariprasad Hiredonkihalli Paramesh <hariprasadh@google.com>
 
     parser.add_argument("--update-dir", type=str, default=None,
                         help="Directory to update. Defaults to the running binary directory.")
@@ -125,7 +125,6 @@ if __name__ == "__main__":
         try:
             version, path = update_from_manifest(
                 version=args.update_version,
-                manifest_url=args.update_manifest,
                 install_dir=args.update_dir,
             )
             LOGGER.result(f"[UPDATE] Installed version {version} into {path}")
